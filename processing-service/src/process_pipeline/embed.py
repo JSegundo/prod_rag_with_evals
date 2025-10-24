@@ -21,16 +21,22 @@ class TextEmbedder:
         Args:
             db_manager: Database connection manager
         """
-        # Store the database manager
-        self.db_manager = db_manager
-        
-        # Initialize OpenAI client
-        api_key = os.getenv('OPENAI_API_KEY')
-        if not api_key:
-            logger.warning("OPENAI_API_KEY environment variable not set")
+        try:
+            # Store the database manager
+            self.db_manager = db_manager
             
-        self.client = OpenAI(api_key=api_key)
-        logger.info("Text embedder initialized")
+            # Initialize OpenAI client
+            api_key = os.getenv('OPENAI_API_KEY')
+            if not api_key:
+                logger.error("OPENAI_API_KEY environment variable not set")
+                raise ValueError("OPENAI_API_KEY environment variable not set")
+                
+            logger.info(f"Initializing OpenAI client with API key: {api_key[:10]}...")
+            self.client = OpenAI(api_key=api_key)
+            logger.info("Text embedder initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize TextEmbedder: {e}", exc_info=True)
+            raise
     
     def create_embeddings(self, chunks: List, metadata: Dict = None) -> List[Dict]:
         """

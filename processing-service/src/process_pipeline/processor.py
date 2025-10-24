@@ -14,13 +14,29 @@ class DocumentProcessor:
             db_manager: Database connection manager
         """
         print("\n=== Initializing Document Processor ===")
-        self.db_manager = db_manager
-        self.extractor = TextExtractor()
-        self.chunker = TextChunker()
-        self.embedder = TextEmbedder(db_manager)
-        self.notifier = StatusNotifier()
-        print("✓ Initialized all pipeline components")
-        print("=== Initialization Complete ===\n")
+        try:
+            self.db_manager = db_manager
+            print("✓ Database manager initialized")
+            
+            self.extractor = TextExtractor()
+            print("✓ Text extractor initialized")
+            
+            self.chunker = TextChunker()
+            print("✓ Text chunker initialized")
+            
+            self.embedder = TextEmbedder(db_manager)
+            print("✓ Text embedder initialized")
+            
+            self.notifier = StatusNotifier()
+            print("✓ Status notifier initialized")
+            
+            print("✓ Initialized all pipeline components")
+            print("=== Initialization Complete ===\n")
+        except Exception as e:
+            print(f"✗ Failed to initialize DocumentProcessor: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
 
     def process_document(self,file_id:str, file_path: str, metadata: Dict = None) -> Dict:
         """

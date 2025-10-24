@@ -52,6 +52,9 @@ services:
     environment:
       - NODE_ENV=development
       - RABBITMQ_URL=amqp://rabbitmq:5672
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-development_key}
     volumes:
       - ./server:/app
       - /app/node_modules
@@ -74,8 +77,11 @@ services:
       - RABBITMQ_URL=amqp://rabbitmq:5672
       - UPLOADS_DIR=/app/uploads
       - PYTHONUNBUFFERED=1
-      - DATABASE_URL=postgres://postgres:yourpassword@postgres:5432/ragdb  # Add this
+      - DATABASE_URL=postgres://postgres:yourpassword@postgres:5432/ragdb
       - API_SERVER_URL=http://server:3000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-development_key}
 
     deploy:
       resources:
