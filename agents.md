@@ -11,20 +11,14 @@ This document provides comprehensive information for AI assistants working with 
 │   Client        │◄──►│   API Server    │◄──►│   Processing    │
 │   (Port 3500)   │    │   (Port 3000)   │    │   Service       │
 └─────────────────┘    └─────────────────┘    │   (Port 8000)   │
-                                              └─────────────────┘
-                                                       │
-                                                       ▼
-                                              ┌─────────────────┐
-                                              │   PostgreSQL    │
-                                              │   + pgvector    │
-                                              └─────────────────┘
-                                                       │
-                                                       ▼
-                                              ┌─────────────────┐
-                                              │   RabbitMQ      │
-                                              │   (Message      │
-                                              │    Queue)       │
-                                              └─────────────────┘
+                              │                └─────────────────┘
+                              │                         │
+                              ▼                         ▼
+                    ┌─────────────────┐    ┌─────────────────┐
+                    │   RabbitMQ      │◄──►│   PostgreSQL    │
+                    │   (Message      │    │   + pgvector    │
+                    │    Queue)       │    └─────────────────┘
+                    └─────────────────┘
 ```
 
 ### Data Flow
@@ -401,3 +395,4 @@ This project demonstrates:
 - Test error scenarios
 - Verify integration points
 - Test performance implications
+

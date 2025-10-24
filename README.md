@@ -73,7 +73,7 @@ This project implements a distributed RAG system with three main components:
 
 2. **Set up environment variables**
    
-   Create a `.env` file in the root directory:
+   Create a `.env` file in the **root directory** (same level as `package.json`):
    ```env
    # OpenAI API Key (required for embeddings)
    OPENAI_API_KEY=your_openai_api_key_here
@@ -83,6 +83,11 @@ This project implements a distributed RAG system with three main components:
    
    # Database Configuration
    DATABASE_URL=postgres://postgres:yourpassword@postgres:5432/ragdb
+   DB_HOST=postgres
+   DB_PORT=5432
+   DB_USER=postgres
+   DB_PASSWORD=yourpassword
+   DB_NAME=ragdb
    
    # RabbitMQ Configuration
    RABBITMQ_URL=amqp://rabbitmq:5672
@@ -90,7 +95,16 @@ This project implements a distributed RAG system with three main components:
    # Processing Service Configuration
    PROCESSING_SERVICE_URL=http://localhost:8000
    UPLOADS_DIR=/app/uploads
+   
+   # Server Configuration
+   PORT=3000
+   NODE_ENV=development
+   
+   # Internal API Key (for service-to-service communication)
+   INTERNAL_API_KEY=your_secure_internal_key_here
    ```
+   
+   **Important**: Make sure the `.env` file is in the root directory, not in the `server/` folder.
 
 3. **Start the system**
    ```bash
@@ -283,3 +297,8 @@ For detailed analysis of the current architecture, identified issues, and improv
 - Future implementation ideas for agentic patterns
 
 
+
+
+
+
+coool. i guess we should create a document aswell for what we should continue implementing next. i see i neer quite finished the chat funcionality. there was some errors in the chat.ts because there is no getchathistory. help me asking me questions to see what we should do.. 
