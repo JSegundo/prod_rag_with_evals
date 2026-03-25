@@ -43,9 +43,11 @@ class QueueConsumer:
         """Connect to RabbitMQ"""
         try:
             logger.info("\n=== Connecting to RabbitMQ ===")
-            self.connection = pika.BlockingConnection(
-                pika.URLParameters(self.rabbitmq_url)
-            )
+            params = pika.URLParameters(self.rabbitmq_url)
+            # Disable heartbeat so long-running document processing
+            # doesn't cause RabbitMQ to drop the connection
+            params.heartbeat = 0
+            self.connection = pika.BlockingConnection(params)
             self.channel = self.connection.channel()
             # Ensure queue exists
             self.channel.queue_declare(queue=self.queue_name, durable=True)

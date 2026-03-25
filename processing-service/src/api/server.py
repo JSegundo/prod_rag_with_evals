@@ -6,7 +6,7 @@ import os
 import time
 import logging
 
-from .routes import search, health
+from .routes import search, health, documents
 from storage.db_manager import get_db_manager
 
 # Configure logging
@@ -31,6 +31,7 @@ app.add_middleware(
 # Include routers
 app.include_router(search.router)
 app.include_router(health.router)
+app.include_router(documents.router)
 
 # Middleware for request logging and timing
 @app.middleware("http")

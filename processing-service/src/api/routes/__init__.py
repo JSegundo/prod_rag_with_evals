@@ -1,1 +1,1 @@
-from . import search, health
+from . import search, health, documents

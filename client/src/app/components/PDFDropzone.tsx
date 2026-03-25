@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useDropzone } from "react-dropzone"
 import { FileIcon, UploadIcon } from "lucide-react"
 import React from "react"
@@ -20,6 +21,7 @@ enum DocumentPageState {
 }
 
 export default function PDFDropzone() {
+  const router = useRouter()
   const [pageState, setPageState] = useState<DocumentPageState>(DocumentPageState.UPLOAD);
 
   const [file, setFile] = useState<File | null>(null)
@@ -33,7 +35,7 @@ export default function PDFDropzone() {
   };
 
   const handleProcessingComplete = () => {
-    setPageState(DocumentPageState.CHAT);
+    router.push('/chat')
   };
 
   const handleProcessingFailed = (errorMessage: string) => {

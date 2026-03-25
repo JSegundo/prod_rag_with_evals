@@ -92,4 +92,15 @@ class HealthResponse(BaseModel):
     """Response for health check endpoint"""
     status: str
     timestamp: float
-    version: Optional[str] = None    
+    version: Optional[str] = None
+
+class Document(BaseModel):
+    """Document metadata"""
+    id: int
+    filename: str
+    created_at: str
+
+class DocumentListResponse(BaseModel):
+    """Response for listing documents"""
+    documents: List[Document]
+    total: int    

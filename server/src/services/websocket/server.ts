@@ -10,6 +10,8 @@ import { setTimeout } from 'timers';
 const connections = new Map<string, WebSocket>();
 // Map to store cleanup timers for connections
 const connectionTimers = new Map<string, NodeJS.Timeout>();
+// Map to store pending messages for fileIds that don't have connections yet
+const pendingMessages = new Map<string, Array<{ status: string; metadata: Record<string, any>; timestamp: number }>>();
 
 // Interface for the status server
 export interface StatusServerInterface {
@@ -51,6 +53,22 @@ export function setupWebSocketServer(httpServer: Server): StatusServerInterface 
               metadata: { timestamp: Date.now() }
             }));
             console.log(`Sent connection message to ${fileId}`);
+
+            // Deliver any pending messages for this fileId
+            const pending = pendingMessages.get(fileId);
+            if (pending && pending.length > 0) {
+              console.log(`Delivering ${pending.length} pending messages for ${fileId}`);
+              for (const msg of pending) {
+                ws.send(JSON.stringify({
+                  type: 'status_update',
+                  fileId,
+                  status: msg.status,
+                  metadata: msg.metadata,
+                  timestamp: msg.timestamp
+                }));
+              }
+              pendingMessages.delete(fileId);
+            }
           } catch (err) {
             console.error(`Error sending test message:`, err);
           }
@@ -125,10 +143,13 @@ export function setupWebSocketServer(httpServer: Server): StatusServerInterface 
           console.error(`Error sending status update:`, err);
         }
       } else {
-        console.log(`No connection found for ${fileId}`);
-        
-        // Store the notification for later delivery (optional enhancement)
-        // This could be implemented with a queue per fileId
+        console.log(`No connection found for ${fileId}, queuing message`);
+
+        // Store the notification for later delivery when client connects
+        const pending = pendingMessages.get(fileId) || [];
+        pending.push({ status, metadata, timestamp: Date.now() });
+        pendingMessages.set(fileId, pending);
+        console.log(`Queued message for ${fileId}. Total pending: ${pending.length}`);
       }
     }
   };

@@ -111,6 +111,6 @@ class DocumentProcessor:
             print(f"✗ Error in document processing pipeline: {e}")
             print("=== Document Processing Failed ===\n")
             self.notifier.send_notification(file_id, "failed", {
-                "error": e
+                "error": str(e)
             })
             raise

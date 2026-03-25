@@ -10,7 +10,7 @@ class StatusNotifier:
     """Client for sending status updates to the API server"""
     
     def __init__(self):
-        self.api_url = os.environ.get('API_SERVER_URL', 'http://localhost:3000')
+        self.api_url = os.environ.get('API_SERVER_URL', 'http://localhost:3000') # nodejs server api url
         self.api_key = os.environ.get('INTERNAL_API_KEY', 'development_key')
     
     def send_notification(self, file_id: str, status: str, metadata: Optional[Dict[str, Any]] = None) -> bool:

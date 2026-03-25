@@ -44,7 +44,7 @@ services:
       - postgres
 
   server:
-    build: 
+    build:
       context: ./server
       dockerfile: Dockerfile
     ports:
@@ -52,6 +52,7 @@ services:
     environment:
       - NODE_ENV=development
       - RABBITMQ_URL=amqp://rabbitmq:5672
+      - PROCESSING_SERVICE_URL=http://processing-service:8000
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - INTERNAL_API_KEY=${INTERNAL_API_KEY:-development_key}
@@ -63,9 +64,16 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./server/src
+          target: /app/src
+        - action: rebuild
+          path: ./server/package.json
 
   processing-service:
-    build: 
+    build:
       context: ./processing-service
       dockerfile: Dockerfile
       cache_from:
@@ -82,7 +90,6 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - INTERNAL_API_KEY=${INTERNAL_API_KEY:-development_key}
-
     deploy:
       resources:
         limits:
@@ -97,6 +104,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
       server:
         condition: service_started
     restart: on-failure
@@ -105,6 +114,13 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    develop:
+      watch:
+        - action: sync
+          path: ./processing-service/src
+          target: /app/src
+        - action: rebuild
+          path: ./processing-service/requirements.txt
 
 volumes:
   rabbitmq_data:

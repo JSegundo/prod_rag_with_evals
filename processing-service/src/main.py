@@ -26,9 +26,25 @@ def main():
     retry_delay = 5  # seconds
     attempt = 0
     
-    # Initialize database connection manager first
-    db_manager = get_db_manager()
-    logger.info("Database connection manager initialized")
+    # Initialize database connection manager with retry logic
+    db_manager = None
+    while attempt < max_retries:
+        try:
+            db_manager = get_db_manager()
+            logger.info("Database connection manager initialized")
+            break
+        except Exception as e:
+            attempt += 1
+            logger.error(f"✗ Database connection attempt {attempt} failed: {e}")
+            if attempt < max_retries:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                logger.error("✗ Max retries reached for database connection. Exiting.")
+                sys.exit(1)
+
+    # Reset attempt counter for queue consumer retries
+    attempt = 0
     
     # Start the API server in a separate thread
     api_thread = threading.Thread(target=start_api_server)

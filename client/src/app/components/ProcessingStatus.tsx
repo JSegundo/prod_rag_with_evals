@@ -96,9 +96,15 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
             socket.close();
             onProcessingComplete();
           } else if (data.status === 'failed') {
-            setError(data.metadata?.error || 'Processing failed');
+            // Ensure error is always a string (defensive handling)
+            const errorMsg = data.metadata?.error
+              ? (typeof data.metadata.error === 'string'
+                  ? data.metadata.error
+                  : JSON.stringify(data.metadata.error))
+              : 'Processing failed';
+            setError(errorMsg);
             socket.close();
-            onProcessingFailed(data.metadata?.error || 'Processing failed');
+            onProcessingFailed(errorMsg);
           }
         }
       } catch (error) {

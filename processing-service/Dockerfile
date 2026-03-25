@@ -1,5 +1,5 @@
 # Build stage
-FROM python:3.9-slim AS builder
+FROM python:3.11-slim-bookworm AS builder
 WORKDIR /app
 
 # Install build dependencies
@@ -31,13 +31,19 @@ RUN find /opt/venv -name "*.pyc" -delete && \
     rm -rf /root/.cache/pip
 
 # Final stage
-FROM python:3.9-slim
+FROM python:3.11-slim-bookworm
 WORKDIR /app
 
 # Install runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libgomp1 \
+    libxcb1 \
+    libx11-6 \
+    libxext6 \
+    libsm6 \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder

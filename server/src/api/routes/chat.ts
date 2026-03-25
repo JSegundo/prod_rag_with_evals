@@ -1,13 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { Express } from 'express';
-import { getChatHistory } from '../controllers/chatController';
 import { ChatManager } from '../../services/chat/chatManager';
 import { ChatRequest, ChatMessage } from '../../types/chat';
 
 const router = Router();
 const chatManager = new ChatManager();
-
-router.get('/:id', getChatHistory);
 
 router.post('/chat', async (req: Request, res: Response) => {
     try {
