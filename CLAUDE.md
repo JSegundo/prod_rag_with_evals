@@ -5,75 +5,80 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Run Commands
 
 ```bash
-# Development (Docker-first, all services with hot reload)
-npm run dev
+# Start postgres (only infrastructure dependency)
+docker compose up -d
 
-# Production
-npm run build && npm start
+# First time setup (create venv + install deps)
+cd backend && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt
 
-# Stop all services
-npm stop
+# Run backend (FastAPI on port 8000)
+cd backend && source venv/bin/activate
+uvicorn app.main:app --reload --port 8000
 
-# View logs
-npm run logs
+# Run client (Next.js on port 3500)
+cd client && npm run dev
 
-# Run individual services outside Docker
-cd client && npm run dev          # Next.js on port 3500 (Turbopack)
-cd server && npm run dev          # Express on port 3000 (ts-node-dev)
-cd processing-service && python src/main.py  # FastAPI on port 8000
-
-# Server tests
-cd server && npm test
-
-# Server build check
-cd server && npm run build
+# Stop postgres
+docker compose down
 
 # Client lint
 cd client && npm run lint
 
 # Connect to database
-docker exec -it pdf_chat_rag-postgres-1 psql -U postgres -d ragdb
+docker exec -it pdf-rag-postgres-1 psql -U postgres -d ragdb
 ```
 
 ## Architecture
 
-This is a **PDF Retrieval-Augmented Generation (RAG)** system with three services communicating via RabbitMQ and HTTP:
+This is a **PDF Retrieval-Augmented Generation (RAG)** system with two services:
 
 **Client** (Next.js 15 / React 19 / Tailwind) -- port 3500
 - PDF upload via react-dropzone, real-time processing status via WebSocket
 - Chat UI for querying uploaded documents
+- API URLs configured via `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WS_URL` env vars
 
-**Server** (Express / TypeScript / Node 21) -- port 3000
-- Orchestrates uploads, chat, and WebSocket connections
+**Backend** (FastAPI / Python 3.11) -- port 8000
+- Single backend handling uploads, processing, chat/RAG, and WebSocket status
 - `ChatManager` handles RAG flow: vector search -> context building -> LLM generation (Anthropic or OpenAI)
-- `QueueService` publishes document processing jobs to RabbitMQ
-- WebSocket server manages per-fileId connections with pending message queues and grace periods
-
-**Processing Service** (FastAPI / Python 3.11) -- port 8000
-- Consumes RabbitMQ jobs and runs the pipeline: Docling extraction -> chunking -> OpenAI embedding (1536-dim) -> PostgreSQL storage
-- Exposes `/api/search` for vector similarity search and `/api/documents` for listing
-- Notifies the server on completion via HTTP callback
+- Processing pipeline: pdfplumber extraction -> tiktoken chunking -> OpenAI embedding (1536-dim) -> pgvector storage
+- WebSocket manager sends per-fileId processing status updates
+- Background processing via `asyncio.create_task` (no message queue needed)
+- Pluggable PDF extractor: pdfplumber (default, lightweight) or Docling (optional, heavy)
 
 **Infrastructure**
 - PostgreSQL + pgvector (port 5438): stores documents and chunks with IVFFlat cosine similarity index
-- RabbitMQ (port 5672, management on 15672): async document processing queue
-- PgAdmin (port 5050): database admin UI
+- That's it. No RabbitMQ, no PgAdmin, no separate services.
 
 ## Key Data Flow
 
-1. **Upload**: Client -> `POST /api/document/upload` -> Server saves file + publishes RabbitMQ message
-2. **Process**: Processing service consumes message -> extract -> chunk -> embed -> store in PostgreSQL -> notify server
-3. **Status**: Server pushes WebSocket updates to client per fileId
-4. **Chat**: Client -> `POST /api/chat/chat` -> Server queries processing service for vector search -> builds context with conversation history -> LLM generates response
+1. **Upload**: Client -> `POST /api/document/upload` -> Backend saves file + starts background processing task
+2. **Process**: Extract text (pdfplumber) -> chunk (tiktoken) -> embed (OpenAI) -> store in PostgreSQL
+3. **Status**: Backend pushes WebSocket updates to client per fileId at `/ws/status/{fileId}`
+4. **Chat**: Client -> `POST /api/chat/chat` -> Backend does vector search -> builds context with conversation history -> LLM generates response
 
 ## Important Implementation Details
 
 - Chat history is **in-memory only** (not persisted to database) in `ChatManager`
-- The processing service has a **7GB memory limit** in docker-compose due to Docling model requirements (~6.5GB)
-- Server uses path alias `@/*` -> `./src/*` (tsconfig)
 - Client uses path alias `@/*` -> `./src/*` (tsconfig)
-- Processing service Python deps are split into `requirements/base.txt` and `requirements/heavy.txt` for Docker layer caching
-- WebSocket connections are managed by fileId with a 60s grace period after disconnect
-- Service-to-service auth uses `INTERNAL_API_KEY` environment variable
+- Backend uses asyncpg for async database access with pgvector support
+- LLM provider is configurable via `LLM_PROVIDER` env var (anthropic or openai)
+- PDF extractor is configurable via `EXTRACTOR` env var (pdfplumber or docling)
 - Database schema is initialized via `init.sql` (pgvector extension, documents + chunks tables)
-- Environment variables are configured in `.env` at root (API keys, database credentials, RabbitMQ URL)
+- Environment variables are configured in `.env` at root (see `.env.example`)
+
+## Project Structure
+
+```
+backend/
+  app/
+    main.py              # FastAPI app, lifespan, CORS
+    config.py            # pydantic-settings configuration
+    api/routes/          # REST endpoints (upload, chat, search, documents, health)
+    websocket/           # WebSocket connection manager and routes
+    services/            # ChatManager, LLM providers, vector search
+    pipeline/            # Document processing (extractor, chunker, embedder, processor)
+    storage/             # asyncpg database layer
+client/                  # Next.js frontend
+docker-compose.yml       # Just postgres
+init.sql                 # Database schema
+```
