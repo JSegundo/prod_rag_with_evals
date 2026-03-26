@@ -1,0 +1,4 @@
+# Optional: Install for advanced PDF extraction with Docling
+# Set EXTRACTOR=docling in .env to activate
+# Warning: Docling models require ~6.5GB RAM
+docling
