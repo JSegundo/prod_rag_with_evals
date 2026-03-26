@@ -1,12 +1,13 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDropzone } from "react-dropzone"
-import { FileIcon, UploadIcon } from "lucide-react"
+import { FileText, UploadCloud, X, AlertCircle, Loader2 } from "lucide-react"
 import React from "react"
 import { validatePDF } from "../utils/pdfUtils"
-import {ProcessingStatus} from './ProcessingStatus';
+import { ProcessingStatus } from './ProcessingStatus'
+import { Button } from "@/components/ui/button"
 
 interface UploadResponse {
   jobId: string;
@@ -20,50 +21,49 @@ enum DocumentPageState {
   CHAT
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
 export default function PDFDropzone() {
   const router = useRouter()
-  const [pageState, setPageState] = useState<DocumentPageState>(DocumentPageState.UPLOAD);
-
+  const [pageState, setPageState] = useState<DocumentPageState>(DocumentPageState.UPLOAD)
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>("")
   const [isUploading, setIsUploading] = useState(false)
   const [jobId, setJobId] = useState<string | null>(null)
 
-   const handleUploadSuccess = (newFileId: string) => {
-    setJobId(newFileId);
-    setPageState(DocumentPageState.PROCESSING);
-  };
+  const handleUploadSuccess = (newFileId: string) => {
+    setJobId(newFileId)
+    setPageState(DocumentPageState.PROCESSING)
+  }
 
   const handleProcessingComplete = () => {
     router.push('/chat')
-  };
+  }
 
   const handleProcessingFailed = (errorMessage: string) => {
-    setError(errorMessage);
-    setPageState(DocumentPageState.UPLOAD);
-  };
+    setError(errorMessage)
+    setPageState(DocumentPageState.UPLOAD)
+  }
 
   const resetPage = () => {
-    setJobId(null);
-    setError(null);
-    setPageState(DocumentPageState.UPLOAD);
-  };
-
-
-  useEffect(() => {
-    console.log("File state updated:", file)
-  }, [file])
+    setJobId(null)
+    setFile(null)
+    setError(null)
+    setPageState(DocumentPageState.UPLOAD)
+  }
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const selectedFile = acceptedFiles[0]
     if (!selectedFile) return
 
-    // Reset previous state
     setError("")
     setFile(null)
     setJobId(null)
 
-    // Validate the PDF
     const validationResult = await validatePDF(selectedFile, {
       maxSizeInMB: 5,
       maxWordCount: 1
@@ -77,7 +77,7 @@ export default function PDFDropzone() {
   }, [])
 
   const uploadFile = async () => {
-    if (!file) return;
+    if (!file) return
 
     setIsUploading(true)
     setError("")
@@ -100,11 +100,8 @@ export default function PDFDropzone() {
       const data: UploadResponse = await response.json()
       setJobId(data.jobId)
       handleUploadSuccess(data.jobId)
-      console.log('Upload successful:', data)
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload file')
-      console.error('Upload error:', err)
     } finally {
       setIsUploading(false)
     }
@@ -116,85 +113,107 @@ export default function PDFDropzone() {
     multiple: false,
   })
 
+  if (pageState === DocumentPageState.PROCESSING && jobId) {
+    return (
+      <div className="w-full max-w-lg">
+        <ProcessingStatus
+          fileId={jobId}
+          onProcessingComplete={handleProcessingComplete}
+          onProcessingFailed={handleProcessingFailed}
+        />
+      </div>
+    )
+  }
+
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-lg">
       <div
         {...getRootProps()}
-        className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors ${
-          isDragActive ? "border-blue-400 bg-blue-50" : "border-gray-300 bg-white"
+        className={`group flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition-all duration-200 cursor-pointer ${
+          isDragActive
+            ? "border-primary bg-primary/5 scale-[1.02]"
+            : "border-muted-foreground/20 bg-card hover:border-muted-foreground/40 hover:bg-muted/50"
         }`}
       >
         <input {...getInputProps()} />
         {file ? (
-          <div className="flex flex-col items-center">
-            <FileIcon className="mb-2 h-12 w-12 text-blue-500" />
-            <p className="text-center text-sm text-gray-600">{file.name}</p>
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
+              <FileText className="h-7 w-7 text-primary" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-foreground">{file.name}</p>
+              <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center">
-            <UploadIcon className="mb-2 h-12 w-12 text-gray-400" />
-            <p className="text-center text-sm text-gray-600">
-              {isDragActive
-                ? "Drop the PDF here"
-                : "Drag & drop a PDF file here, or click to select"}
-            </p>
+          <div className="flex flex-col items-center gap-3">
+            <div className={`flex h-14 w-14 items-center justify-center rounded-xl transition-colors ${
+              isDragActive ? "bg-primary/10" : "bg-muted"
+            }`}>
+              <UploadCloud className={`h-7 w-7 transition-colors ${
+                isDragActive ? "text-primary" : "text-muted-foreground"
+              }`} />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-foreground">
+                {isDragActive ? "Drop your PDF here" : "Drag & drop a PDF"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                or click to browse (max 5 MB)
+              </p>
+            </div>
           </div>
         )}
       </div>
-      
+
       {file && (
-        <>
-          <button
-            onClick={() => {
-              setFile(null)
-              setJobId(null)
-              setError("")
+        <div className="mt-4 flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={(e) => {
+              e.stopPropagation()
+              resetPage()
             }}
-            className="mt-4 w-full rounded bg-red-500 px-4 py-2 text-white transition-colors hover:bg-red-600"
           >
+            <X className="mr-1.5 h-3.5 w-3.5" />
             Clear
-          </button>
-          <button
+          </Button>
+          <Button
+            className="flex-1"
             onClick={uploadFile}
             disabled={isUploading}
-            className={`mt-4 w-full rounded px-4 py-2 text-white transition-colors ${
-              isUploading 
-                ? "bg-gray-400 cursor-not-allowed" 
-                : "bg-blue-500 hover:bg-blue-600"
-            }`}
           >
-            {isUploading ? "Uploading..." : "Upload PDF"}
-          </button>
-        </>
-      )}
-
-      {jobId && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded">
-          <p className="text-green-700 text-sm">
-            File uploaded successfully! Job ID: {jobId}
-          </p>
+            {isUploading ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <UploadCloud className="mr-1.5 h-3.5 w-3.5" />
+                Upload PDF
+              </>
+            )}
+          </Button>
         </div>
       )}
 
       {error && (
-        <>
-        <p className="mt-2 text-sm text-red-600">{error}</p>
-        <button
-            onClick={resetPage}
-            className="mt-4 w-full rounded bg-red-500 px-4 py-2 text-white transition-colors hover:bg-red-600"
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+          <div className="flex-1">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-1.5 h-7 px-2 text-xs text-destructive hover:text-destructive"
+              onClick={resetPage}
             >
-            {isUploading ? "Uploading..." : "Try Again"}
-          </button>
-          </>
-      )}
-
-       {pageState === DocumentPageState.PROCESSING && jobId && (
-        <div className="processing-section mb-2">
-          <ProcessingStatus 
-            fileId={jobId}
-            onProcessingComplete={handleProcessingComplete}
-            onProcessingFailed={handleProcessingFailed}
-          />
+              Try again
+            </Button>
+          </div>
         </div>
       )}
     </div>

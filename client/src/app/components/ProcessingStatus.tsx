@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/app/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -146,7 +146,7 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
           
           <div className="mb-8 flex items-center">
             <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4 bg-destructive/10 text-destructive">
-              <Loader2 className="w-6 h-6" />
+              <XCircle className="w-6 h-6" />
             </div>
             <div>
               <h4 className="font-medium text-lg">Processing Failed</h4>
