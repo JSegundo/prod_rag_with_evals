@@ -2,7 +2,7 @@ import "./globals.css"
 import { Inter } from "next/font/google"
 import type React from "react"
 import Link from "next/link"
-import { FileText, MessageSquare, Upload } from "lucide-react"
+import { FileText, FolderOpen, Upload } from "lucide-react"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -34,11 +34,11 @@ export default function RootLayout({
                 Upload
               </Link>
               <Link
-                href="/chat"
+                href="/documents"
                 className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
-                <MessageSquare className="h-3.5 w-3.5" />
-                Chat
+                <FolderOpen className="h-3.5 w-3.5" />
+                Documents
               </Link>
             </div>
           </div>

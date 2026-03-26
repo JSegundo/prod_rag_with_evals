@@ -40,8 +40,8 @@ export default function PDFDropzone() {
     setPageState(DocumentPageState.PROCESSING)
   }
 
-  const handleProcessingComplete = () => {
-    router.push('/chat')
+  const handleProcessingComplete = (shareToken: string) => {
+    router.push(`/chat/${shareToken}`)
   }
 
   const handleProcessingFailed = (errorMessage: string) => {
@@ -65,7 +65,7 @@ export default function PDFDropzone() {
     setJobId(null)
 
     const validationResult = await validatePDF(selectedFile, {
-      maxSizeInMB: 5,
+      maxSizeInMB: 30,
       maxWordCount: 1
     })
 
@@ -90,6 +90,7 @@ export default function PDFDropzone() {
       const response = await fetch(`${apiUrl}/api/document/upload`, {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       })
 
       if (!response.ok) {
@@ -160,7 +161,7 @@ export default function PDFDropzone() {
                 {isDragActive ? "Drop your PDF here" : "Drag & drop a PDF"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                or click to browse (max 5 MB)
+                or click to browse (max 30 MB)
               </p>
             </div>
           </div>
