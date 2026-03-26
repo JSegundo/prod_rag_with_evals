@@ -3,7 +3,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import aiofiles
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
 from app.config import settings
 from app.pipeline.processor import get_processor
@@ -15,7 +15,7 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 
 @router.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(request: Request, file: UploadFile = File(...)):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
@@ -30,6 +30,7 @@ async def upload_document(file: UploadFile = File(...)):
         await f.write(content)
 
     # Start background processing
+    session_id = getattr(request.state, "session_id", None)
     processor = get_processor()
     asyncio.create_task(
         processor.process_document(
@@ -37,6 +38,7 @@ async def upload_document(file: UploadFile = File(...)):
             file_path=str(file_path),
             filename=file.filename or "unknown.pdf",
             ws_manager=manager,
+            session_id=session_id,
         )
     )
 

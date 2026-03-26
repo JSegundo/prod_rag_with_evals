@@ -24,6 +24,7 @@ class DocumentProcessor:
         file_path: str,
         filename: str,
         ws_manager: ConnectionManager,
+        session_id: str | None = None,
     ) -> dict:
         try:
             await ws_manager.send_status(file_id, "processing", {"stage": "started"})
@@ -40,11 +41,15 @@ class DocumentProcessor:
 
             # Embed + store
             await ws_manager.send_status(file_id, "processing", {"stage": "embedding"})
-            await self.embedder.create_embeddings(chunks, filename)
+            result = await self.embedder.create_embeddings(chunks, filename, session_id)
             logger.info(f"Stored {len(chunks)} embeddings for {filename}")
 
             await ws_manager.send_status(
-                file_id, "completed", {"chunkCount": len(chunks)}
+                file_id, "completed", {
+                    "chunkCount": len(chunks),
+                    "documentId": result["document_id"],
+                    "shareToken": result["share_token"],
+                }
             )
 
             return {
@@ -53,6 +58,8 @@ class DocumentProcessor:
                     "filename": filename,
                     "num_pages": len(extraction.pages),
                     "num_chunks": len(chunks),
+                    "document_id": result["document_id"],
+                    "share_token": result["share_token"],
                 },
             }
 

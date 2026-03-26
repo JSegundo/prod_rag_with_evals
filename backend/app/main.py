@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.storage.db import init_pool, close_pool
 from app.api.routes import upload, chat, documents, search, health
+from app.middleware.session import SessionMiddleware
 from app.websocket.routes import router as ws_router
 
 
@@ -26,11 +27,13 @@ app = FastAPI(title="PDF RAG API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3500", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(SessionMiddleware)
 
 # REST routes
 app.include_router(health.router)
