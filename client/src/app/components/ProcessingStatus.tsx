@@ -75,8 +75,8 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
     console.log(`Setting up WebSocket for ${fileId}`);
     
     // Create WebSocket with explicit URL
-    const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3000';
-    const socket = new WebSocket(`${WS_URL}/status/${fileId}`);
+    const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+    const socket = new WebSocket(`${WS_URL}/ws/status/${fileId}`);
     
     socket.onopen = () => {
       console.log(`WebSocket connected for ${fileId}`);

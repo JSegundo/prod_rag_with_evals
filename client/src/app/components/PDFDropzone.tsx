@@ -86,7 +86,8 @@ export default function PDFDropzone() {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('http://localhost:3000/api/document/upload', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/document/upload`, {
         method: 'POST',
         body: formData,
       })
