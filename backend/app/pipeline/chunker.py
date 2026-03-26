@@ -10,6 +10,9 @@ class TextChunker:
         self.overlap = overlap_tokens
         self.separators = ["\n\n", "\n", ". ", " "]
 
+    def _encode(self, text: str) -> list[int]:
+        return self.encoder.encode(text, disallowed_special=())
+
     def chunk(self, extraction: ExtractionResult) -> list[dict]:
         """Split extracted text into token-limited chunks with page tracking."""
         # Build a map of character offset -> page number
@@ -42,7 +45,7 @@ class TextChunker:
 
     def _recursive_split(self, text: str) -> list[str]:
         """Recursively split text to fit within max_tokens."""
-        tokens = self.encoder.encode(text)
+        tokens = self._encode(text)
         if len(tokens) <= self.max_tokens:
             return [text] if text.strip() else []
 
@@ -56,13 +59,13 @@ class TextChunker:
             current = ""
             for part in parts:
                 candidate = current + sep + part if current else part
-                if len(self.encoder.encode(candidate)) <= self.max_tokens:
+                if len(self._encode(candidate)) <= self.max_tokens:
                     current = candidate
                 else:
                     if current:
                         chunks.append(current)
                     # If this single part is too large, recurse
-                    if len(self.encoder.encode(part)) > self.max_tokens:
+                    if len(self._encode(part)) > self.max_tokens:
                         chunks.extend(self._recursive_split(part))
                         current = ""
                     else:
@@ -82,7 +85,7 @@ class TextChunker:
 
     def _token_split(self, text: str) -> list[str]:
         """Hard split by token count as a last resort."""
-        tokens = self.encoder.encode(text)
+        tokens = self._encode(text)
         chunks = []
         start = 0
         while start < len(tokens):
@@ -99,7 +102,7 @@ class TextChunker:
 
         result = [chunks[0]]
         for i in range(1, len(chunks)):
-            prev_tokens = self.encoder.encode(chunks[i - 1])
+            prev_tokens = self._encode(chunks[i - 1])
             overlap_text = self.encoder.decode(prev_tokens[-self.overlap:])
             result.append(overlap_text + chunks[i])
         return result
