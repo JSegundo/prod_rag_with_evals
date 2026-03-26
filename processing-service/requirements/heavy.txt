@@ -1,1 +1,0 @@
-docling[convert,chunk]==2.24.0
