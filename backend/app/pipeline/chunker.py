@@ -1,6 +1,10 @@
+import re
+
 import tiktoken
 
 from app.pipeline.extractor import ExtractionResult
+
+_HEADING_RE = re.compile(r'^[A-Z][A-Za-z0-9 .:\-/&,()]{2,80}$')
 
 
 class TextChunker:
@@ -34,10 +38,14 @@ class TextChunker:
                 idx = offset
 
             page_numbers = self._get_page_numbers(idx, idx + len(chunk_text), page_map)
+            section_header = self._detect_section_header(chunk_text)
+            metadata = {}
+            if section_header:
+                metadata["section_header"] = section_header
             result.append({
                 "text": chunk_text.strip(),
                 "page_numbers": page_numbers,
-                "metadata": {},
+                "metadata": metadata,
             })
             offset = idx + len(chunk_text) - (self.overlap * 4)  # approximate char overlap
 
@@ -129,3 +137,14 @@ class TextChunker:
             if start < pend and end > pstart:
                 pages.add(pnum)
         return sorted(pages) if pages else [1]
+
+    def _detect_section_header(self, text: str) -> str | None:
+        """Best-effort heading detection from the first few lines of a chunk."""
+        lines = text.strip().split("\n")[:3]
+        for line in lines:
+            line = line.strip()
+            if not line or len(line) < 3:
+                continue
+            if _HEADING_RE.match(line):
+                return line
+        return None
