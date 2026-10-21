@@ -312,3 +312,76 @@ async def get_stats():
         "refusalRate": round(stats["refused_queries"] / total_queries, 3) if total_queries > 0 else 0,
         "avgSimilarity": round(float(stats["avg_similarity"]), 3) if stats["avg_similarity"] else 0,
     }
+
+
+# ──────────────────────────────────────────────
+# Eval
+# ──────────────────────────────────────────────
+# Read-only: eval/run_*.py scripts write eval_runs/eval_results directly,
+# these endpoints just display the latest run. No "trigger a run" endpoint yet.
+
+
+def _serialize_eval_run(row) -> dict:
+    return {
+        "id": row["id"],
+        "status": row["status"],
+        "trigger": row["trigger"],
+        "totalQuestions": row["total_questions"],
+        "completedQuestions": row["completed_questions"],
+        "avgFaithfulness": row["avg_faithfulness"],
+        "avgRelevance": row["avg_relevance"],
+        "avgRetrievalPrecision": row["avg_retrieval_precision"],
+        "refusalRate": row["refusal_rate"],
+        "regressionDetected": row["regression_detected"],
+        "startedAt": row["started_at"].isoformat() if row["started_at"] else None,
+        "completedAt": row["completed_at"].isoformat() if row["completed_at"] else None,
+    }
+
+
+@router.get("/eval/latest")
+async def get_latest_eval():
+    """Most recent eval run plus its per-question results."""
+    run = await execute_query(
+        "SELECT * FROM eval_runs ORDER BY id DESC LIMIT 1", fetch_one=True
+    )
+    if not run:
+        return {"run": None, "results": []}
+
+    results = await execute_query(
+        """SELECT question_id, question, expected_doc_title, actual_answer,
+                  retrieved_doc_titles, top_similarity_score, faithfulness_score,
+                  relevance_score, correctness_score, retrieval_hit, was_refused,
+                  judge_reasoning
+           FROM eval_results WHERE eval_run_id = $1 ORDER BY id""",
+        [run["id"]],
+    )
+
+    return {
+        "run": _serialize_eval_run(run),
+        "results": [
+            {
+                "questionId": r["question_id"],
+                "question": r["question"],
+                "expectedDocTitle": r["expected_doc_title"],
+                "actualAnswer": r["actual_answer"],
+                "retrievedDocTitles": r["retrieved_doc_titles"],
+                "topSimilarityScore": r["top_similarity_score"],
+                "faithfulnessScore": r["faithfulness_score"],
+                "relevanceScore": r["relevance_score"],
+                "correctnessScore": r["correctness_score"],
+                "retrievalHit": r["retrieval_hit"],
+                "wasRefused": r["was_refused"],
+                "judgeReasoning": r["judge_reasoning"],
+            }
+            for r in results
+        ],
+    }
+
+
+@router.get("/eval/history")
+async def get_eval_history(limit: int = Query(20, ge=1, le=100)):
+    """Last N eval runs, for a trend line."""
+    runs = await execute_query(
+        "SELECT * FROM eval_runs ORDER BY id DESC LIMIT $1", [limit]
+    )
+    return {"runs": [_serialize_eval_run(r) for r in runs]}
