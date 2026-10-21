@@ -41,14 +41,13 @@ class DocumentProcessor:
 
             # Embed + store
             await ws_manager.send_status(file_id, "processing", {"stage": "embedding"})
-            result = await self.embedder.create_embeddings(chunks, filename, session_id)
+            result = await self.embedder.create_embeddings(chunks, filename, session_id, file_path=file_path)
             logger.info(f"Stored {len(chunks)} embeddings for {filename}")
 
             await ws_manager.send_status(
                 file_id, "completed", {
                     "chunkCount": len(chunks),
                     "documentId": result["document_id"],
-                    "shareToken": result["share_token"],
                 }
             )
 
@@ -59,7 +58,6 @@ class DocumentProcessor:
                     "num_pages": len(extraction.pages),
                     "num_chunks": len(chunks),
                     "document_id": result["document_id"],
-                    "share_token": result["share_token"],
                 },
             }
 

@@ -1,5 +1,4 @@
 import json
-import secrets
 import uuid
 
 import numpy as np
@@ -9,10 +8,6 @@ from app.config import settings
 from app.storage.db import get_pool
 
 
-def _generate_share_token() -> str:
-    return secrets.token_urlsafe(6)[:8]
-
-
 class TextEmbedder:
     def __init__(self):
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
@@ -20,21 +15,20 @@ class TextEmbedder:
         self.dimensions = settings.embedding_dimensions
 
     async def create_embeddings(
-        self, chunks: list[dict], filename: str, session_id: str | None = None
+        self, chunks: list[dict], filename: str, session_id: str | None = None, file_path: str | None = None
     ) -> dict:
         if not chunks:
-            return {"document_id": None, "share_token": None, "chunks": []}
+            return {"document_id": None, "chunks": []}
 
         pool = get_pool()
-        share_token = _generate_share_token()
 
         # Create document record
         async with pool.acquire() as conn:
             row = await conn.fetchrow(
-                "INSERT INTO documents (filename, session_id, share_token) VALUES ($1, $2, $3) RETURNING id",
+                "INSERT INTO documents (filename, session_id, file_path) VALUES ($1, $2, $3) RETURNING id",
                 filename,
                 uuid.UUID(session_id) if session_id else None,
-                share_token,
+                file_path,
             )
             document_id = row["id"]
 
@@ -69,7 +63,6 @@ class TextEmbedder:
 
         return {
             "document_id": document_id,
-            "share_token": share_token,
             "chunks": [
                 {
                     "document_id": document_id,
