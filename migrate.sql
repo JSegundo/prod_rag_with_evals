@@ -32,3 +32,23 @@ END $$;
 
 -- Backfill share_tokens for existing documents
 UPDATE documents SET share_token = substr(md5(random()::text), 1, 8) WHERE share_token IS NULL;
+
+-- Global chat: scope conversations by session_id instead of document_id,
+-- and drop the now-unused per-document share link.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'session_id') THEN
+        ALTER TABLE messages ADD COLUMN session_id UUID REFERENCES sessions(id);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'documents' AND column_name = 'share_token') THEN
+        ALTER TABLE documents DROP COLUMN share_token;
+    END IF;
+
+    -- correctness (vs. a gold answer) is judged separately from faithfulness
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'eval_results' AND column_name = 'correctness_score') THEN
+        ALTER TABLE eval_results ADD COLUMN correctness_score FLOAT;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, created_at);
