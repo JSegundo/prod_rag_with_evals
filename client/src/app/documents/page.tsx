@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { FileText, MessageSquare, Share2, Clock } from 'lucide-react'
+import { FileText, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 interface Document {
   id: number
   filename: string
-  shareToken: string
   chunkCount: number
   created_at: string | null
 }
@@ -23,7 +22,6 @@ function formatDate(iso: string | null): string {
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
-  const [copied, setCopied] = useState<string | null>(null)
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -32,13 +30,6 @@ export default function DocumentsPage() {
       .then(data => setDocuments(data.documents || []))
       .finally(() => setLoading(false))
   }, [])
-
-  const copyShareLink = (shareToken: string) => {
-    const url = `${window.location.origin}/chat/${shareToken}`
-    navigator.clipboard.writeText(url)
-    setCopied(shareToken)
-    setTimeout(() => setCopied(null), 2000)
-  }
 
   if (loading) {
     return (
@@ -57,7 +48,7 @@ export default function DocumentsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Your Documents</h1>
         <p className="mt-1.5 text-muted-foreground">
-          Select a document to chat with, or upload a new one.
+          Everything here is searchable from a single chat.
         </p>
       </div>
 
@@ -74,9 +65,9 @@ export default function DocumentsPage() {
           {documents.map(doc => (
             <div
               key={doc.id}
-              className="group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50"
+              className="flex items-center justify-between rounded-xl border border-border bg-card p-4"
             >
-              <Link href={`/chat/${doc.shareToken}`} className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                   <FileText className="h-5 w-5 text-primary" />
                 </div>
@@ -92,26 +83,6 @@ export default function DocumentsPage() {
                     </Badge>
                   </div>
                 </div>
-              </Link>
-
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground"
-                  onClick={() => copyShareLink(doc.shareToken)}
-                  title="Copy share link"
-                >
-                  <Share2 className="h-3.5 w-3.5" />
-                </Button>
-                {copied === doc.shareToken && (
-                  <span className="text-xs text-primary">Copied!</span>
-                )}
-                <Link href={`/chat/${doc.shareToken}`}>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                    <MessageSquare className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
               </div>
             </div>
           ))}

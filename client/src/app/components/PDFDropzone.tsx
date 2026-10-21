@@ -40,8 +40,10 @@ export default function PDFDropzone() {
     setPageState(DocumentPageState.PROCESSING)
   }
 
-  const handleProcessingComplete = (shareToken: string) => {
-    router.push(`/chat/${shareToken}`)
+  const handleProcessingComplete = () => {
+    // Chat is global now (searches every document), so there's no per-doc
+    // token to route to -- just go to the one chat page.
+    router.push('/chat')
   }
 
   const handleProcessingFailed = (errorMessage: string) => {
