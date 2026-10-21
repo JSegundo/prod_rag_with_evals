@@ -24,12 +24,18 @@ class AnthropicProvider(LLMProvider):
             else:
                 user_messages.append({"role": msg.role, "content": msg.content})
 
+        # temperature not forwarded: current Claude models reject it ("temperature
+        # is deprecated for this model"). Kept in the signature for API compatibility.
         response = await self.client.messages.create(
             model=self.model,
             system=system_content,
             messages=user_messages,
-            temperature=temperature,
             max_tokens=max_tokens,
         )
 
-        return response.content[0].text
+        # Current models can prepend a ThinkingBlock (no .text attr) before
+        # the real text block, so scan for it instead of indexing content[0].
+        for block in response.content:
+            if block.type == "text":
+                return block.text
+        return ""

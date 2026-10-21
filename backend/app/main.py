@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.storage.db import init_pool, close_pool
-from app.api.routes import upload, chat, documents, search, health
+from app.api.routes import upload, chat, documents, search, health, admin
 from app.middleware.session import SessionMiddleware
 from app.websocket.routes import router as ws_router
 
@@ -41,6 +41,7 @@ app.include_router(upload.router)
 app.include_router(chat.router)
 app.include_router(documents.router)
 app.include_router(search.router)
+app.include_router(admin.router)
 
 # WebSocket
 app.include_router(ws_router)

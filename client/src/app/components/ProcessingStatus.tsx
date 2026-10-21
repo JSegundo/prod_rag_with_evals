@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 interface ProcessingStatusProps {
   fileId: string;
-  onProcessingComplete: (shareToken: string) => void;
+  onProcessingComplete: () => void;
   onProcessingFailed: (error: string) => void;
 }
 
@@ -94,7 +94,7 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
             setIsComplete(true);
             setProgressValue(100);
             socket.close();
-            onProcessingComplete(data.metadata?.shareToken || '');
+            onProcessingComplete();
           } else if (data.status === 'failed') {
             // Ensure error is always a string (defensive handling)
             const errorMsg = data.metadata?.error

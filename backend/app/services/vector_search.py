@@ -33,22 +33,26 @@ async def vector_search(
     )
     query_embedding = np.array(response.data[0].embedding, dtype=np.float32)
 
-    # Build query — register_vector handles the type codec, no ::vector cast needed
+    # Build query with document title join
     if document_id:
         sql = """
-            SELECT id, document_id, chunk_text AS text, metadata,
-                   1 - (embedding <=> $1) AS score
-            FROM chunks
-            WHERE document_id = $2
+            SELECT c.id, c.document_id, c.chunk_text AS text, c.metadata,
+                   c.page_numbers, d.filename AS doc_title,
+                   1 - (c.embedding <=> $1) AS score
+            FROM chunks c
+            JOIN documents d ON d.id = c.document_id
+            WHERE c.document_id = $2
             ORDER BY score DESC
             LIMIT $3
         """
         params = [query_embedding, document_id, top_k]
     else:
         sql = """
-            SELECT id, document_id, chunk_text AS text, metadata,
-                   1 - (embedding <=> $1) AS score
-            FROM chunks
+            SELECT c.id, c.document_id, c.chunk_text AS text, c.metadata,
+                   c.page_numbers, d.filename AS doc_title,
+                   1 - (c.embedding <=> $1) AS score
+            FROM chunks c
+            JOIN documents d ON d.id = c.document_id
             ORDER BY score DESC
             LIMIT $2
         """
@@ -63,15 +67,22 @@ async def vector_search(
         score = float(row["score"])
         if score < min_score:
             continue
-        text = row["text"]
-        if len(text) > 1000:
-            text = text[:1000] + "..."
+
+        metadata = row["metadata"]
+        if isinstance(metadata, str):
+            metadata = json.loads(metadata)
+        elif metadata is None:
+            metadata = {}
+
         results.append({
             "id": row["id"],
             "document_id": row["document_id"],
-            "text": text,
+            "text": row["text"],
             "score": score,
-            "metadata": row["metadata"] if isinstance(row["metadata"], dict) else json.loads(row["metadata"]) if row["metadata"] else {},
+            "page_numbers": list(row["page_numbers"]) if row["page_numbers"] else [],
+            "doc_title": row["doc_title"] or "Unknown",
+            "section_header": metadata.get("section_header"),
+            "metadata": metadata,
         })
 
     return results

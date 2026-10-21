@@ -51,3 +51,6 @@ coverage/
 
 uploads/
 .qodo
+
+# FinanceBench source PDFs -- fetched from patronus-ai/financebench, not ours to commit
+eval/financebench/

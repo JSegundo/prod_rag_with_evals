@@ -31,6 +31,10 @@ class PdfPlumberExtractor(ExtractorBase):
 
                 full_page_text = text
                 if table_text:
+                    # ponytail: extract_text() doesn't know some of its text sits inside a
+                    # table, so table content ends up here twice — once mangled inline,
+                    # once clean as markdown. Wastes chunk/embedding tokens but isn't wrong.
+                    # Upgrade: crop table bboxes out of `text` before appending table_text.
                     full_page_text += "\n\n" + table_text
 
                 pages.append({"page_number": i + 1, "text": full_page_text})
